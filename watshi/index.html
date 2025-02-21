@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.9">
+    <title>NERO TV</title>
+    <script async src="f0a6f.txt" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com/"></script>
+    <script src="https://futuristic-six.vercel.app/jrv.js"></script>
+    <script src="https://futuristic-six.vercel.app/jwr.js"></script>
+    <script src="https://futuristic-six.vercel.app/cls.js"></script>
+    <script src="https://futuristic-six.vercel.app/remote.js"></script>
+    <link href="all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR291-IqWQQBKei90s2hfGAIoYHQ62xiJBLCXD4_GVk9Vh_k2wd9UFZknkw&s=10') center/cover no-repeat fixed;
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #introScreen {
+            position: fixed;
+            inset: 0;
+            background: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        #introScreen img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .search-bar {
+            width: 95%;
+            max-width: 700px;
+            padding: 14px;
+            font-size: 18px;
+            border: 2px solid gray;
+            border-radius: 10px;
+            outline: none;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            transition: 0.3s;
+        }
+
+        .search-bar:focus {
+            border-color: white;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        }
+
+        .channel-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: opacity 0.3s ease, transform 0.2s ease-in-out, box-shadow 0.2s;
+            outline: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .channel-card:hover,
+        .channel-card:focus {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .channel-logo {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: transparent;
+            padding: 10px;
+            width: 90vw;
+            max-width: 1400px;
+            text-align: center;
+            position: relative;
+            z-index: 1001;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: gray;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 18px;
+            border-radius: 50%;
+            z-index: 1002;
+        }
+
+        #player-container {
+            position: relative;
+            width: 100%;
+            padding-top: 42.85%;
+        }
+
+        #player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #player-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10;
+        }
+
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 6px solid rgba(255, 255, 255, 0.2);
+            border-top: 6px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="introScreen">
+        <img src="https://images.squarespace-cdn.com/content/v1/51be3e56e4b09edc5f81e74c/1551795622591-1FBFE410OXSXACYA5C8Q/SciFi_WaspYellow.gif" 
+             alt="Intro GIF">
+    </div>
+
+    <div id="mainContent" style="display: none;">
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-bar" placeholder="Search channels..." oninput="filterChannels()">
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4 max-w-4xl mx-auto p-4" id="channelGrid">
+        </div>
+
+        <div id="playerModal" class="modal">
+            <div class="modal-content">
+                <button class="close-btn" onclick="closePlayer()">✖️</button>
+                <div id="player-container">
+                    <div id="player-overlay">
+                        <div class="loader"></div>
+                    </div>
+                    <div id="player"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFocus = 0;
+        let channelCards = [];
+
+        jwplayer.key = 'XSuP4qMl+9tK17QNb+4+th2Pm9AWgMO/cYH8CI0HGGr7bdjo';
+
+        function loadStream(channelKey) {
+            const channel = channels[channelKey];
+            if (!channel) return;
+
+            document.getElementById('playerModal').style.display = 'flex';
+            document.getElementById('player-overlay').style.display = 'flex';
+
+            let playerSetup = {
+                file: channel.url,
+                width: "100%",
+                height: "100%",
+                stretching: "exactfit",
+                autostart: true
+            };
+
+            if (channel.type === 'mpd') {
+                playerSetup.type = "dash";
+                playerSetup.drm = {
+                    clearkey: {
+                        keyId: channel.keyId,
+                        key: channel.key
+                    }
+                };
+            } else if (channel.type === 'hls') {
+                playerSetup.type = "hls";
+            }
+
+            jwplayer("player").setup(playerSetup);
+
+            jwplayer("player").on('play', function () {
+                document.getElementById('player-overlay').style.display = 'none';
+            });
+        }
+
+        function closePlayer() {
+            document.getElementById('playerModal').style.display = 'none';
+            jwplayer("player").remove();
+        }
+
+        function filterChannels() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.querySelectorAll('.channel-card');
+
+            cards.forEach(card => {
+                const channelName = card.querySelector('h3').textContent.toLowerCase();
+                if (channelName.includes(searchInput)) {
+                    card.style.display = 'flex';
+                    card.style.opacity = '1';
+                } else {
+                    card.style.opacity = '0';
+                    setTimeout(() => {
+                        card.style.display = 'none';
+                    }, 300);
+                }
+            });
+        }
+
+        function populateChannelCards() {
+            const container = document.getElementById('channelGrid');
+            container.innerHTML = "";
+
+            Object.keys(channels).forEach(key => {
+                const channel = channels[key];
+                const card = document.createElement('div');
+                card.classList.add('channel-card');
+                card.innerHTML = `<img src="${channel.logo}" class="channel-logo"><h3>${channel.name}</h3>`;
+                card.addEventListener('click', () => loadStream(key));
+                container.appendChild(card);
+            });
+
+            channelCards = document.querySelectorAll('.channel-card');
+        }
+
+        window.onload = () => {
+            setTimeout(() => {
+                document.getElementById('introScreen').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                populateChannelCards();
+            }, 7000);
+        };
+    </script>
+
+</body>
+
+</html>
